@@ -14,7 +14,7 @@
 import type { Card, CardId, PlayerView, Rng } from '@fdp/rules';
 import {
   chanceDeGanhar, depoisDeMim, faltaGanhar, maiorNaMesa, maosRestantes,
-  ordenadas, pressaoNasApostas, MAIOR, VALORES,
+  ordenadas, pressaoNasApostas, MAIOR, MENOR, VALORES,
 } from './leitura.js';
 
 
@@ -88,7 +88,7 @@ export function decidirAposta(visao: PlayerView, dificuldade: Dificuldade, rng: 
  * Rodada normal: soma a chance de cada carta virar vaza.
  *
  * A chance de uma carta de valor `v` bater UM adversário aleatório é
- * `(v-2)/13`; contra `n` adversários, essa chance elevada a `n`. É grosseiro —
+ * `(v-1)/10`; contra `n` adversários, essa chance elevada a `n`. É grosseiro —
  * ignora quem já jogou, e trata as cartas como independentes — mas erra pouco
  * onde importa: reconhece que um `A` quase sempre ganha e que um `3` quase
  * nunca, que é o essencial de uma aposta.
@@ -97,12 +97,12 @@ function apostaPelaMao(visao: PlayerView, dificuldade: Dificuldade): number {
   const adversarios = Math.max(1, visao.playerOrder.length - 1);
 
   const esperadas = visao.hand.reduce((soma, carta) => {
-    // MÉDIO estima no vácuo: `(v-2)/13` supõe o baralho inteiro intacto.
+    // MÉDIO estima no vácuo: `(v-1)/10` supõe o baralho inteiro intacto.
     // DIFÍCIL para cima conta o que já saiu — é a diferença entre "um Rei
     // costuma ganhar" e "os Ases já saíram, então o meu Rei ganha".
     const chance = contaCartas(dificuldade)
       ? chanceDeGanhar(carta.value, adversarios, visao)
-      : (Math.max(0, carta.value - 2) / VALORES) ** adversarios;
+      : (Math.max(0, carta.value - MENOR) / VALORES) ** adversarios;
     return soma + chance;
   }, 0);
 
@@ -124,7 +124,7 @@ const contaCartas = (d: Dificuldade): boolean => d === 'DIFICIL' || d === 'REALI
  * Rodada de testa: o bot vê a carta dos OUTROS e não vê a sua (RJ-100/RJ-101).
  *
  * Só há uma vaza, então a pergunta é binária: a minha carta desconhecida bate a
- * maior que está à vista? A chance disso é `(14 - maior) / 13`. Acima de meio a
+ * maior que está à vista? A chance disso é `(MAIOR - maior) / VALORES`. Acima de meio a
  * meio ele aposta que ganha.
  *
  * É pouco código para a tela mais distintiva do jogo, mas é o raciocínio certo:

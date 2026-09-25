@@ -16,6 +16,7 @@ import {
   nextFirstBidder,
   nextLeaderOf,
   orderFrom,
+  maxCardsPerRound,
   rankValue,
   resolveTrick,
   trickStanding,
@@ -48,38 +49,26 @@ const ANULA_CARTAS: TieRule = 'EMPATE_ANULA_CARTAS';
 // --- 4.1 Baralhos, setup e progressão --------------------------------------
 
 describe('CA-201/CA-202: sabot e número de baralhos', () => {
-  it('CA-202: deckCount = ceil(jogadores × cartas / 52), mínimo 1', () => {
-    expect(deckCountFor(8, 7)).toBe(2); // 56 cartas
-    expect(deckCountFor(8, 6)).toBe(1); // 48 cartas
-    expect(deckCountFor(2, 1)).toBe(1);
-    expect(deckCountFor(8, 10)).toBe(2); // 80 cartas
-    expect(deckCountFor(7, 7)).toBe(1); // 49 cartas — cabe em um baralho
+  it('baralho único: deckCount é sempre 1 e o teto de cartas cabe nele com a vira', () => {
+    expect(deckCountFor(8, 4)).toBe(1);
+    expect(deckCountFor(2, 19)).toBe(1);
+    // ⌊39 / jogadores⌋: 40 cartas, uma reservada para a vira.
+    expect([2, 3, 4, 5, 6, 7, 8].map(maxCardsPerRound)).toEqual([19, 13, 9, 7, 6, 5, 4]);
   });
 
-  it('CA-201: o sabot tem 52×d cartas, 4×d de cada valor, ids únicos', () => {
-    for (const deckCount of [1, 2, 3]) {
-      const shoe = buildShoe(deckCount, createRng(`seed-${deckCount}`));
-      expect(shoe).toHaveLength(52 * deckCount);
-      expect(new Set(shoe.map((c) => c.id)).size).toBe(52 * deckCount);
+  it('o baralho tem 40 cartas: 4 5 6 7 10 J Q A 2 3, sem 8, 9 e K', () => {
+    const shoe = buildShoe(1, createRng('seed-40'));
+    expect(shoe).toHaveLength(40);
+    expect(new Set(shoe.map((c) => c.id)).size).toBe(40);
+    expect(new Set(shoe.map((c) => `${c.rank}-${c.suit}`)).size).toBe(40);
 
-      const byValue = new Map<number, number>();
-      for (const card of shoe) byValue.set(card.value, (byValue.get(card.value) ?? 0) + 1);
-      expect([...byValue.keys()].sort((a, b) => a - b)).toEqual(
-        Array.from({ length: 13 }, (_, i) => i + 2),
-      );
-      for (const count of byValue.values()) expect(count).toBe(4 * deckCount);
-    }
-  });
-
-  it('CA-203: com 2 baralhos existem cartas idênticas e ids distintos', () => {
-    const shoe = buildShoe(2, createRng('dup'));
-    const key = (c: Card): string => `${c.rank}-${c.suit}`;
-    const groups = new Map<string, Card[]>();
-    for (const card of shoe) groups.set(key(card), [...(groups.get(key(card)) ?? []), card]);
-    for (const cards of groups.values()) {
-      expect(cards).toHaveLength(2);
-      expect(cards[0]!.id).not.toBe(cards[1]!.id);
-    }
+    const byValue = new Map<number, number>();
+    for (const card of shoe) byValue.set(card.value, (byValue.get(card.value) ?? 0) + 1);
+    expect([...byValue.keys()].sort((a, b) => a - b)).toEqual(
+      Array.from({ length: 10 }, (_, i) => i + 1),
+    );
+    for (const count of byValue.values()) expect(count).toBe(4);
+    for (const r of ['8', '9', 'K']) expect(shoe.some((c) => c.rank === r)).toBe(false);
   });
 
   it('CA-201: ids são opacos — não derivam da carta nem da posição', () => {
@@ -103,11 +92,9 @@ describe('CA-201/CA-202: sabot e número de baralhos', () => {
     expect(shoeA.map((c) => c.id)).not.toEqual(ordenados);
   });
 
-  it('RJ-021: valores de 2 a 14, com A no topo', () => {
-    expect(rankValue('2')).toBe(2);
-    expect(rankValue('10')).toBe(10);
-    expect(rankValue('J')).toBe(11);
-    expect(rankValue('A')).toBe(14);
+  it('força: 4 < 5 < 6 < 7 < 10 < J < Q < A < 2 < 3', () => {
+    const ordem = ['4', '5', '6', '7', '10', 'J', 'Q', 'A', '2', '3'] as const;
+    expect(ordem.map(rankValue)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
   });
 });
 
@@ -126,14 +113,14 @@ describe('CA-209: embaralhamento determinístico e uniforme', () => {
 
   it('a distribuição por posição é uniforme dentro da tolerância', () => {
     // Onde cai o Ás de copas do baralho 0, ao longo de muitos embaralhamentos.
-    const buckets = new Array(52).fill(0) as number[];
-    const runs = 52_000;
+    const buckets = new Array(40).fill(0) as number[];
+    const runs = 40_000;
     for (let i = 0; i < runs; i++) {
       const shoe = buildShoe(1, createRng(`u${i}`));
       const pos = shoe.findIndex((c) => c.rank === 'A' && c.suit === 'copas');
       buckets[pos]! += 1;
     }
-    const expected = runs / 52; // 1000
+    const expected = runs / 40; // 1000
     for (const count of buckets) {
       expect(Math.abs(count - expected)).toBeLessThan(expected * 0.2);
     }
@@ -162,10 +149,10 @@ describe('CA-205: progressão em serrote', () => {
     ]);
   });
 
-  it('CA-205: o teto não é reduzido pelo número de jogadores', () => {
-    // Com 8 jogadores, 7 cartas continuam valendo — o custo vira 2 baralhos.
-    expect(nextCardsThisRound(6, 7)).toBe(7);
-    expect(deckCountFor(8, 7)).toBe(2);
+  it('CA-205: o teto é o que cabe no baralho: com 8 jogadores, 4 cartas', () => {
+    const teto = maxCardsPerRound(8);
+    expect(nextCardsThisRound(3, teto)).toBe(4);
+    expect(nextCardsThisRound(4, teto)).toBe(1);
   });
 });
 
@@ -240,9 +227,9 @@ describe('CA-240 a CA-248: resolução de vaza', () => {
 
   it('CA-204: naipe e baralho de origem não influenciam', () => {
     const cards: Record<CardId, Card> = {
-      x: { id: 'x', rank: 'K', suit: 'paus', value: 13, deckIndex: 1 },
-      y: { id: 'y', rank: 'K', suit: 'copas', value: 13, deckIndex: 0 },
-      z: { id: 'z', rank: 'A', suit: 'ouros', value: 14, deckIndex: 1 },
+      x: { id: 'x', rank: '2', suit: 'paus', value: 9, deckIndex: 0 },
+      y: { id: 'y', rank: '2', suit: 'copas', value: 9, deckIndex: 0 },
+      z: { id: 'z', rank: '3', suit: 'ouros', value: 10, deckIndex: 0 },
     };
     const plays = [
       { playerId: 'a', cardId: 'x' },
@@ -250,7 +237,7 @@ describe('CA-240 a CA-248: resolução de vaza', () => {
       { playerId: 'c', cardId: 'z' },
     ];
     expect(resolveTrick(plays, cards, ANULA_CARTAS).winnerId).toBe('c');
-    // Os dois reis empatam entre si, independentemente de naipe e deckIndex.
+    // Os dois 2 (não coringa) empardam, independentemente do naipe.
     const semAs = plays.slice(0, 2);
     expect(resolveTrick(semAs, cards, ANULA_CARTAS).winnerId).toBeNull();
   });

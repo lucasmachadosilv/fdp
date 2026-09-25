@@ -13,10 +13,12 @@
 
 import type { Card, PlayerId, PlayerView } from '@fdp/rules';
 
-/** Quantos valores distintos existem: de 2 a A. */
-export const VALORES = 13;
-/** O maior valor possível (`A`), de RJ-021. */
-export const MAIOR = 14;
+/** Quantos valores distintos existem: de 4 a 3 (4 5 6 7 10 J Q A 2 3). */
+export const VALORES = 10;
+/** O menor valor possível (`4`). */
+export const MENOR = 1;
+/** O maior valor possível (`3`). */
+export const MAIOR = 10;
 
 /**
  * Toda carta que este jogador já viu nesta rodada, com repetição.
@@ -42,7 +44,7 @@ export function cartasVistas(visao: PlayerView): number[] {
 /**
  * Chance de uma carta de valor `valor` bater UMA carta desconhecida.
  *
- * Conta o sabot de verdade — `deckCount` baralhos de 52 (RJ-024) — e desconta
+ * Conta o baralho de verdade — 40 cartas, 4 de cada valor — e desconta
  * o que já apareceu. É a diferença entre "um Rei costuma ganhar" e "os quatro
  * Ases já saíram, então o meu Rei ganha".
  *
@@ -57,7 +59,7 @@ export function chanceContraUma(valor: number, visao: PlayerView): number {
   let acimaOuIgual = 0;
   let restantes = 0;
 
-  for (let v = 2; v <= MAIOR; v++) {
+  for (let v = MENOR; v <= MAIOR; v++) {
     const jaVistas = vistas.filter((x) => x === v).length;
     const sobrando = Math.max(0, porValor - jaVistas);
     restantes += sobrando;

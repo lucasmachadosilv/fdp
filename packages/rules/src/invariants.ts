@@ -9,7 +9,7 @@
 import { isActive } from './engine.js';
 import { deckCountFor } from './deck.js';
 import { project } from './projection.js';
-import type { MatchState, PlayerId } from './types.js';
+import { DECK_SIZE, type MatchState, type PlayerId } from './types.js';
 
 export function checkInvariants(state: MatchState): string[] {
   const violations: string[] = [];
@@ -17,13 +17,13 @@ export function checkInvariants(state: MatchState): string[] {
   const dealt = Object.keys(hidden.cards).length > 0;
 
   if (dealt) {
-    // INV-03: mãos + monte + cartas jogadas = 52 × deckCount.
+    // INV-03: mãos + monte + cartas jogadas = 40 × deckCount.
     const inHands = Object.values(hidden.hands).reduce((n, h) => n + h.length, 0);
     const played =
       round.resolvedTricks.reduce((n, t) => n + t.plays.length, 0) +
       (round.currentTrick?.plays.length ?? 0);
     const total = inHands + hidden.stock.length + played;
-    const expected = 52 * state.deckCount;
+    const expected = DECK_SIZE * state.deckCount;
     if (total !== expected) {
       violations.push(`INV-03: ${total} cartas contabilizadas, esperado ${expected}`);
     }

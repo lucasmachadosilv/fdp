@@ -2,19 +2,25 @@
  * Construção e embaralhamento do sabot (`02` §3.2).
  */
 
-import { RANKS, SUITS, type Card, type CardId, type Rank } from './types.js';
+import { DECK_SIZE, RANKS, SUITS, type Card, type CardId, type Rank } from './types.js';
 import type { Rng } from './rng.js';
 
-/** RJ-021: 2..10 valem o número; J=11, Q=12, K=13, A=14. */
+/** Força sem coringa: 4=1, 5=2, … 3=10 (ordem de `RANKS`). */
 export function rankValue(rank: Rank): number {
-  const index = RANKS.indexOf(rank);
-  return index + 2;
+  return RANKS.indexOf(rank) + 1;
 }
 
-/** RJ-024: `ceil(jogadores × cartas / 52)`, mínimo 1. */
-export function deckCountFor(activePlayers: number, cardsThisRound: number): number {
-  const needed = activePlayers * cardsThisRound;
-  return Math.max(1, Math.ceil(needed / 52));
+/**
+ * Sempre um baralho só: não há cartas repetidas na mesa. O número de cartas
+ * por rodada é que se limita a caber nele (`maxCardsPerRound`).
+ */
+export function deckCountFor(_activePlayers: number, _cardsThisRound: number): number {
+  return 1;
+}
+
+/** Cartas de cada um cabem no baralho, com uma sobrando para a vira. */
+export function maxCardsPerRound(activePlayers: number): number {
+  return Math.max(1, Math.floor((DECK_SIZE - 1) / activePlayers));
 }
 
 /**

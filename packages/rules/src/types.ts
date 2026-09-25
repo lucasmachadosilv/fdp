@@ -8,15 +8,23 @@
 export type PlayerId = string;
 export type CardId = string;
 
-export const RANKS = [
-  '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A',
-] as const;
+/** Do mais fraco ao mais forte. Sem 8, 9 e K: baralho de 40 cartas. */
+export const RANKS = ['4', '5', '6', '7', '10', 'J', 'Q', 'A', '2', '3'] as const;
 export type Rank = (typeof RANKS)[number];
 
 export const SUITS = ['copas', 'ouros', 'espadas', 'paus'] as const;
 export type Suit = (typeof SUITS)[number];
 
-/** RJ-021. `A` é a carta mais alta. Naipe não influencia nada (RJ-022). */
+/** Desempate entre coringas, do mais fraco ao mais forte. */
+export const COR_SUIT_ORDER: readonly Suit[] = ['ouros', 'espadas', 'copas', 'paus'];
+
+/** Cartas de um baralho. */
+export const DECK_SIZE = RANKS.length * SUITS.length;
+
+/**
+ * `value` é a força na rodada: 1..10 pela ordem de `RANKS`; coringa vale
+ * 11..14 pelo naipe (`COR_SUIT_ORDER`). Fora do coringa o naipe não conta.
+ */
 export interface Card {
   id: CardId;
   rank: Rank;
@@ -38,7 +46,8 @@ export interface MatchOptions {
 
 export const DEFAULT_OPTIONS: MatchOptions = {
   vidasIniciais: 5,
-  maxCartasPorRodada: 7,
+  /** Sem teto próprio: vale o que cabe no baralho (`maxCardsPerRound`). */
+  maxCartasPorRodada: 19,
   regraEmpate: 'EMPATE_ANULA_CARTAS',
 };
 
@@ -109,7 +118,7 @@ export interface HiddenState {
   /** Resto do sabot, não distribuído nesta rodada (RJ-042). */
   stock: CardId[];
   hands: Record<PlayerId, CardId[]>;
-  /** Catálogo da rodada: 52 × deckCount cartas. */
+  /** Catálogo da rodada: as 40 cartas do baralho. */
   cards: Record<CardId, Card>;
 }
 

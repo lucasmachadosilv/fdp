@@ -5,7 +5,7 @@
  * `Math.random()` (RJ-140): tempo e aleatoriedade entram por parâmetro.
  */
 
-import { buildShoe, cardCatalog, deckCountFor } from './deck.js';
+import { buildShoe, cardCatalog, deckCountFor, maxCardsPerRound } from './deck.js';
 import { createRng } from './rng.js';
 import {
   forbiddenBetFor,
@@ -146,8 +146,8 @@ function validateOptions(options: MatchOptions, playerCount: number): void {
   if (options.vidasIniciais < 1 || options.vidasIniciais > 10) {
     throw new RangeError('vidasIniciais deve estar em [1, 10]');
   }
-  if (options.maxCartasPorRodada < 1 || options.maxCartasPorRodada > 10) {
-    throw new RangeError('maxCartasPorRodada deve estar em [1, 10]');
+  if (options.maxCartasPorRodada < 1 || options.maxCartasPorRodada > maxCardsPerRound(2)) {
+    throw new RangeError(`maxCartasPorRodada deve estar em [1, ${maxCardsPerRound(2)}]`);
   }
 }
 
@@ -803,11 +803,16 @@ function resolveRound(state: MatchState): MoveResult {
   return { ok: true, state: startNextRound(afterState), events };
 }
 
+/** O teto é o que cabe no baralho único, e a opção só pode baixá-lo. */
+function roundCeiling(state: MatchState, players: number): number {
+  return Math.min(state.options.maxCartasPorRodada, maxCardsPerRound(players));
+}
+
 function startNextRound(state: MatchState): MatchState {
   const survivors = activePlayers(state);
   const cardsThisRound = nextCardsThisRound(
     state.cardsThisRound,
-    state.options.maxCartasPorRodada,
+    roundCeiling(state, survivors.length),
   );
 
   return {
@@ -908,10 +913,14 @@ export function withdrawPlayers(
     ? base.firstBidderId
     : nextFirstBidder(base.playerOrder, base.firstBidderId, (id) => survivors.includes(id));
 
+  // Com menos gente o teto só sobe, mas a rodada nunca pode passar dele.
+  const cardsThisRound = Math.min(base.cardsThisRound, roundCeiling(base, survivors.length));
+
   const restarted: MatchState = {
     ...base,
     firstBidderId,
-    deckCount: deckCountFor(survivors.length, base.cardsThisRound),
+    cardsThisRound,
+    deckCount: deckCountFor(survivors.length, cardsThisRound),
     round: emptyRound(),
     hidden: { stock: [], hands: {}, cards: {} },
   };

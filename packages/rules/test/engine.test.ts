@@ -172,21 +172,16 @@ describe('CA-200/CA-303: determinismo', () => {
 // --- CA-210 / CA-211: distribuição -----------------------------------------
 
 describe('CA-210/CA-211: distribuição', () => {
-  it('CA-210: 8 jogadores × 7 cartas usam 2 baralhos e sobram 48 no monte', () => {
-    let state = createMatch({
-      matchId: 'm',
-      seed: 'oito',
-      playerIds: players(8),
-      options: { maxCartasPorRodada: 7 },
-    });
-    // Salta direto para uma rodada de 7 cartas.
-    state = { ...state, cardsThisRound: 7, deckCount: 0 };
+  it('CA-210: 8 jogadores × 4 cartas (o teto) cabem num baralho só', () => {
+    let state = createMatch({ matchId: 'm', seed: 'oito', playerIds: players(8) });
+    // Salta direto para a rodada de 4 cartas, o máximo com 8 na mesa.
+    state = { ...state, cardsThisRound: 4, deckCount: 0 };
     state = settle(state).state;
 
-    expect(state.deckCount).toBe(2);
-    expect(state.hidden.stock).toHaveLength(104 - 56);
+    expect(state.deckCount).toBe(1);
+    expect(state.hidden.stock).toHaveLength(40 - 32);
     for (const id of state.playerOrder) {
-      expect(state.hidden.hands[id]).toHaveLength(7);
+      expect(state.hidden.hands[id]).toHaveLength(4);
     }
     expect(checkInvariants(state)).toEqual([]);
   });
@@ -227,7 +222,7 @@ describe('CA-281 a CA-286: projeção e vazamento', () => {
       );
       for (const card of Object.values(view.foreheadCards)) {
         expect(card.rank).toBeDefined();
-        expect(card.value).toBeGreaterThanOrEqual(2);
+        expect(card.value).toBeGreaterThanOrEqual(1);
       }
       // CA-281: a própria carta não aparece em profundidade alguma.
       expect(view.foreheadCards[viewer]).toBeUndefined();
@@ -657,20 +652,17 @@ describe('CA-296/CA-297: retirada', () => {
     expect(isActive(after, vitima)).toBe(false);
   });
 
-  it('CA-053: deckCount é recalculado para o novo número de jogadores', () => {
-    let state = createMatch({
-      matchId: 'm',
-      seed: 'decks',
-      playerIds: players(8),
-      options: { maxCartasPorRodada: 7 },
-    });
-    state = settle({ ...state, cardsThisRound: 7 }).state;
-    expect(state.deckCount).toBe(2);
+  it('CA-053: a retirada nunca deixa a rodada acima do teto do baralho', () => {
+    let state = createMatch({ matchId: 'm', seed: 'decks', playerIds: players(3) });
+    state = settle({ ...state, cardsThisRound: 13 }).state;
+    expect(state.deckCount).toBe(1);
 
     const result = withdrawPlayers(state, [state.playerOrder[0]!], ctx);
     if (!result.ok) throw new Error('falhou');
-    // 7 jogadores × 7 cartas = 49 → volta a caber em 1 baralho.
+    // Com 2 o teto sobe para 19: as 13 cartas continuam valendo.
+    expect(result.state.cardsThisRound).toBe(13);
     expect(result.state.deckCount).toBe(1);
+    expect(checkInvariants(settle(result.state).state)).toEqual([]);
   });
 
   it('partida encerrada não deixa jogador da vez apontando para quem saiu', () => {
