@@ -98,7 +98,7 @@ export interface RoundState {
 
   bets: Record<PlayerId, number>;
   bidOrder: PlayerId[];
-  /** Valor proibido do último apostador (RJ-054); `null` se não há restrição. */
+  /** Sempre `null`: a aposta é livre. Mantido pelo protocolo. */
   forbiddenBet: number | null;
 
   tricksWon: Record<PlayerId, number>;
@@ -210,7 +210,6 @@ export type ErrorCode =
   | 'ILLEGAL_MOVE';
 
 export type MoveReason =
-  | 'SOMA_PROIBIDA'
   | 'APOSTA_FORA_DO_INTERVALO'
   | 'FASE_ERRADA'
   | 'MATCH_ENCERRADA'

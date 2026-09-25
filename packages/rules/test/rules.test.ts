@@ -8,7 +8,6 @@ import {
   buildShoe,
   createRng,
   deckCountFor,
-  forbiddenBetFor,
   isDoomed,
   legalBets,
   minGuaranteedDeviation,
@@ -222,39 +221,12 @@ describe('CA-207: rotação do primeiro apostador', () => {
   });
 });
 
-// --- 4.2 Apostas e a soma proibida -----------------------------------------
+// --- 4.2 Apostas ----------------------------------------------------------
 
-describe('CA-220 a CA-224: regra da soma proibida', () => {
-  it('CA-220: com 2 cartas e apostas 0,0,1,0 o valor proibido é 1', () => {
-    expect(forbiddenBetFor(2, [0, 0, 1, 0])).toBe(1);
-    expect(legalBets(2, [0, 0, 1, 0], true)).toEqual([0, 2]);
-  });
-
-  it('CA-222: some a restrição quando o valor cai fora do intervalo', () => {
-    expect(forbiddenBetFor(2, [3])).toBeNull(); // 2 − 3 = −1
-    expect(forbiddenBetFor(2, [])).toBe(2);
-    expect(legalBets(2, [3], true)).toEqual([0, 1, 2]);
-  });
-
-  it('CA-224: o último apostador sempre tem ao menos uma aposta legal', () => {
-    for (let cards = 1; cards <= 10; cards++) {
-      for (let sum = 0; sum <= cards * 8; sum++) {
-        expect(legalBets(cards, [sum], true).length).toBeGreaterThan(0);
-      }
-    }
-  });
-
-  it('CA-223: nenhuma combinação legal fecha a soma com o número de cartas', () => {
-    for (let cards = 1; cards <= 7; cards++) {
-      const previous = [Math.floor(cards / 2)];
-      for (const bet of legalBets(cards, previous, true)) {
-        expect(previous[0]! + bet).not.toBe(cards);
-      }
-    }
-  });
-
-  it('quem não é o último não sofre restrição', () => {
-    expect(legalBets(2, [0], false)).toEqual([0, 1, 2]);
+describe('aposta livre', () => {
+  it('qualquer valor de 0 ao número de cartas, mesmo fechando a soma', () => {
+    expect(legalBets(1)).toEqual([0, 1]);
+    expect(legalBets(3)).toEqual([0, 1, 2, 3]);
   });
 });
 

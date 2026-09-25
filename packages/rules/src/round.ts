@@ -1,6 +1,5 @@
 /**
- * Progressão de rodadas, ordem de aposta e a regra da soma proibida.
- * Normativo: `02` §3.3, §3.4 e §3.5.2.
+ * Progressão de rodadas, ordem de aposta e apostas legais.
  */
 
 import type { PlayerId } from './types.js';
@@ -50,33 +49,7 @@ export function orderFrom(
   return out;
 }
 
-/**
- * RJ-054/RJ-055: valor proibido do **último** apostador.
- *
- * Só existe se cair dentro de `[0, cardsThisRound]`; fora disso a soma já não
- * pode fechar e o último aposta livremente. Como o intervalo tem no mínimo dois
- * valores e no máximo um é proibido, sempre sobra jogada legal — a fase nunca
- * trava.
- */
-export function forbiddenBetFor(
-  cardsThisRound: number,
-  previousBets: readonly number[],
-): number | null {
-  const sum = previousBets.reduce((a, b) => a + b, 0);
-  const forbidden = cardsThisRound - sum;
-  return forbidden >= 0 && forbidden <= cardsThisRound ? forbidden : null;
-}
-
-/** Apostas legais de quem está na vez. `isLastBidder` decide se RJ-054 incide. */
-export function legalBets(
-  cardsThisRound: number,
-  previousBets: readonly number[],
-  isLastBidder: boolean,
-): number[] {
-  const forbidden = isLastBidder ? forbiddenBetFor(cardsThisRound, previousBets) : null;
-  const bets: number[] = [];
-  for (let bet = 0; bet <= cardsThisRound; bet++) {
-    if (bet !== forbidden) bets.push(bet);
-  }
-  return bets;
+/** Aposta livre: qualquer valor de 0 ao número de cartas, mesmo fechando a soma. */
+export function legalBets(cardsThisRound: number): number[] {
+  return Array.from({ length: cardsThisRound + 1 }, (_, bet) => bet);
 }

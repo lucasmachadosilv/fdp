@@ -12,7 +12,6 @@ export {
   withCoringa,
 } from './deck.js';
 export {
-  forbiddenBetFor,
   legalBets,
   nextCardsThisRound,
   nextFirstBidder,

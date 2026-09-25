@@ -6,21 +6,11 @@
  */
 
 import { isActive } from './engine.js';
-import { forbiddenBetFor } from './round.js';
 import type { MatchState, Move, PlayerId } from './types.js';
 
-/** RJ-114: aposta 0; se 0 for proibido pela soma, aposta 1. */
-export function autoBet(state: MatchState): number {
-  const { round, cardsThisRound } = state;
-  const placed = round.bidOrder.filter((id) => round.bets[id] !== undefined);
-  const isLastBidder = placed.length === round.bidOrder.length - 1;
-  if (!isLastBidder) return 0;
-
-  const forbidden = forbiddenBetFor(
-    cardsThisRound,
-    placed.map((id) => round.bets[id]!),
-  );
-  return forbidden === 0 ? 1 : 0;
+/** RJ-114: aposta 0 — com aposta livre, sempre é legal. */
+export function autoBet(_state: MatchState): number {
+  return 0;
 }
 
 /**

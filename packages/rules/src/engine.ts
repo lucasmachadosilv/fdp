@@ -8,7 +8,6 @@
 import { buildShoe, cardCatalog, deckCountFor, maxCardsPerRound, withCoringa } from './deck.js';
 import { createRng } from './rng.js';
 import {
-  forbiddenBetFor,
   nextCardsThisRound,
   nextFirstBidder,
   orderFrom,
@@ -254,7 +253,7 @@ function deal(state: MatchState): MoveResult {
       isForeheadRound,
       bets: {},
       bidOrder,
-      forbiddenBet: bidOrder.length === 1 ? forbiddenBetFor(cardsThisRound, []) : null,
+      forbiddenBet: null,
       tricksWon,
       mortoEmVaza,
       trickNumber: 0,
@@ -373,19 +372,7 @@ function applyBet(state: MatchState, playerId: PlayerId, bet: number): MoveResul
     return fail('VALIDATION_FAILED', 'APOSTA_FORA_DO_INTERVALO');
   }
 
-  const placed = round.bidOrder.filter((id) => round.bets[id] !== undefined);
-  const isLastBidder = placed.length === round.bidOrder.length - 1;
-
-  if (isLastBidder) {
-    const forbidden = forbiddenBetFor(
-      cardsThisRound,
-      placed.map((id) => round.bets[id]!),
-    );
-    if (forbidden !== null && bet === forbidden) {
-      return fail('ILLEGAL_MOVE', 'SOMA_PROIBIDA'); // RJ-056
-    }
-  }
-
+  // Aposta livre: a soma pode fechar com o número de cartas.
   const bets = { ...round.bets, [playerId]: bet };
   const remaining = round.bidOrder.filter((id) => bets[id] === undefined);
   const events: EngineEvent[] = [
@@ -394,16 +381,6 @@ function applyBet(state: MatchState, playerId: PlayerId, bet: number): MoveResul
 
   if (remaining.length > 0) {
     const nextBidder = remaining[0]!;
-    const stillToPlace = remaining.length;
-    // Só o último apostador carrega a restrição (RJ-054).
-    const nextForbidden =
-      stillToPlace === 1
-        ? forbiddenBetFor(
-            cardsThisRound,
-            round.bidOrder.filter((id) => bets[id] !== undefined).map((id) => bets[id]!),
-          )
-        : null;
-
     events.push({
       type: 'round:phaseChanged',
       phase: 'APOSTAS',
@@ -414,7 +391,7 @@ function applyBet(state: MatchState, playerId: PlayerId, bet: number): MoveResul
       ok: true,
       state: {
         ...state,
-        round: { ...round, bets, activePlayerId: nextBidder, forbiddenBet: nextForbidden },
+        round: { ...round, bets, activePlayerId: nextBidder },
       },
       events,
     };

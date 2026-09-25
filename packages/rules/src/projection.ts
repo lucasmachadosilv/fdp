@@ -81,7 +81,7 @@ export interface PlayerView {
   winnerIds: PlayerId[] | null;
   endReason: MatchState['endReason'];
 
-  /** Só para quem está na vez e é o último apostador (RJ-054). */
+  /** Sempre `null`: a aposta é livre. Mantido pelo protocolo. */
   forbiddenBet: number | null;
   viewerId: PlayerId;
   isSpectator: boolean;

@@ -67,17 +67,6 @@ export function checkInvariants(state: MatchState): string[] {
     violations.push(`INV-08: fase ${round.phase} sem activePlayerId`);
   }
 
-  // INV-09: a soma das apostas nunca fecha com o número de vazas.
-  const allBetsIn =
-    round.bidOrder.length > 0 &&
-    round.bidOrder.every((id) => round.bets[id] !== undefined);
-  if (allBetsIn) {
-    const sum = round.bidOrder.reduce((n, id) => n + round.bets[id]!, 0);
-    if (sum === state.cardsThisRound) {
-      violations.push(`INV-09: soma das apostas ${sum} = cartas ${state.cardsThisRound}`);
-    }
-  }
-
   // INV-10
   for (const [id, lives] of Object.entries(state.lives)) {
     if (lives < 0 || lives > state.options.vidasIniciais) {

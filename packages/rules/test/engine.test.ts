@@ -106,14 +106,9 @@ function legalMoves(state: MatchState): Move[] {
   };
 
   if (state.round.phase === 'APOSTAS') {
-    const { round, cardsThisRound } = state;
-    const placed = round.bidOrder.filter((id) => round.bets[id] !== undefined);
-    const isLast = placed.length === round.bidOrder.length - 1;
-    const sum = placed.reduce((n, id) => n + round.bets[id]!, 0);
-    const forbidden = isLast ? cardsThisRound - sum : null;
     const moves: Move[] = [];
-    for (let bet = 0; bet <= cardsThisRound; bet++) {
-      if (bet !== forbidden) moves.push({ ...base, type: 'bet', bet });
+    for (let bet = 0; bet <= state.cardsThisRound; bet++) {
+      moves.push({ ...base, type: 'bet', bet });
     }
     return moves;
   }
@@ -412,18 +407,13 @@ describe('CA-281 a CA-286: projeção e vazamento', () => {
     expect(view.allHands['quem-assiste']).toBeUndefined();
   });
 
-  it('o valor proibido só vai para quem está na vez', () => {
+  it('aposta livre: ninguém recebe valor proibido', () => {
     let state = createMatch({ matchId: 'm', seed: 'proib', playerIds: players(3) });
     state = settle({ ...state, cardsThisRound: 3 }).state;
-    // Deixa só o último apostador de fora.
     state = must(applyMove(state, { ...baseMove(state), type: 'bet', bet: 1 }, ctx));
     state = must(applyMove(state, { ...baseMove(state), type: 'bet', bet: 1 }, ctx));
 
-    const lastBidder = state.round.activePlayerId!;
-    expect(project(state, lastBidder).forbiddenBet).toBe(1); // 3 − 2
-    for (const other of state.playerOrder.filter((id) => id !== lastBidder)) {
-      expect(project(state, other).forbiddenBet).toBeNull();
-    }
+    for (const id of state.playerOrder) expect(project(state, id).forbiddenBet).toBeNull();
   });
 });
 
@@ -447,19 +437,15 @@ describe('CA-221 a CA-226: rejeições', () => {
     return settle({ ...state, cardsThisRound: 2 }).state;
   };
 
-  it('CA-221: o último apostador não pode fechar a soma', () => {
+  it('aposta livre: o último apostador pode fechar a soma', () => {
     let state = setup();
     state = must(applyMove(state, { ...baseMove(state), type: 'bet', bet: 1 }, ctx));
     state = must(applyMove(state, { ...baseMove(state), type: 'bet', bet: 1 }, ctx));
 
-    const before = state;
+    // 1 + 1 + 0 = 2 cartas.
     const result = applyMove(state, { ...baseMove(state), type: 'bet', bet: 0 }, ctx);
-    expect(result.ok).toBe(false);
-    if (!result.ok) {
-      expect(result.code).toBe('ILLEGAL_MOVE');
-      expect(result.motivo).toBe('SOMA_PROIBIDA');
-    }
-    expect(state).toBe(before); // estado intacto
+    expect(result.ok).toBe(true);
+    if (result.ok) expect(checkInvariants(result.state)).toEqual([]);
   });
 
   it('CA-225: aposta fora do intervalo é rejeitada', () => {
@@ -543,16 +529,15 @@ describe('CA-290 a CA-293: auto-play', () => {
     if (move.type === 'bet') expect(move.bet).toBe(0);
   });
 
-  it('CA-291: aposta 1 quando 0 é o valor proibido', () => {
-    // 3 jogadores, 1 carta. Se os dois primeiros apostam 0, o proibido é 1...
-    // então forçamos soma 1 para tornar 0 proibido.
+  it('CA-291: aposta livre — o auto-play do último aposta 0 mesmo fechando a soma', () => {
     let state = createMatch({ matchId: 'm', seed: 'auto2', playerIds: players(3) });
     state = settle(state).state;
     state = must(applyMove(state, { ...baseMove(state), type: 'bet', bet: 1 }, ctx));
     state = must(applyMove(state, { ...baseMove(state), type: 'bet', bet: 0 }, ctx));
 
-    const move = autoMove(state); // soma 1, cartas 1 → proibido é 0
-    if (move.type === 'bet') expect(move.bet).toBe(1);
+    const move = autoMove(state); // soma 1, cartas 1: 0 fecha a soma e vale
+    expect(move.type === 'bet' && move.bet).toBe(0);
+    expect(applyMove(state, move, ctx).ok).toBe(true);
   });
 
   it('CA-292/CA-293: joga a menor carta, desempatando pelo menor CardId', () => {
