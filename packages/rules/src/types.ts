@@ -45,7 +45,7 @@ export interface MatchOptions {
 }
 
 export const DEFAULT_OPTIONS: MatchOptions = {
-  vidasIniciais: 5,
+  vidasIniciais: 3,
   /** Sem teto próprio: vale o que cabe no baralho (`maxCardsPerRound`). */
   maxCartasPorRodada: 19,
   regraEmpate: 'EMPATE_ANULA_CARTAS',

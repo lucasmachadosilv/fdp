@@ -149,6 +149,11 @@ describe('CA-200/CA-303: determinismo', () => {
     expect(final.playerOrder).toEqual(initial.playerOrder);
   });
 
+  it('por padrão todos começam com 3 vidas', () => {
+    const state = createMatch({ matchId: 'm', seed: 'tres', playerIds: players(4) });
+    expect(Object.values(state.lives)).toEqual([3, 3, 3, 3]);
+  });
+
   it('CA-208: todos começam com vidasIniciais', () => {
     const state = createMatch({
       matchId: 'm',
