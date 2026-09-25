@@ -11,7 +11,7 @@
  * quanto do que está à vista ele de fato usa.
  */
 
-import type { Card, PlayerId, PlayerView } from '@fdp/rules';
+import { coringaRank, rankValue, type Card, type PlayerId, type PlayerView } from '@fdp/rules';
 
 /** Quantos valores distintos existem: de 4 a 3 (4 5 6 7 10 J Q A 2 3). */
 export const VALORES = 10;
@@ -39,6 +39,7 @@ export function cartasVistas(visao: PlayerView): number[] {
   for (const carta of visao.hand) vistas.push(carta.value);
   // Rodada de testa: as cartas alheias estão à vista o tempo todo.
   for (const carta of Object.values(visao.foreheadCards)) vistas.push(carta.value);
+  if (visao.vira) vistas.push(visao.vira.value);
 
   return vistas;
 }
@@ -55,8 +56,11 @@ export function cartasVistas(visao: PlayerView): number[] {
  * Um bot que tratasse empate como vitória apostaria alto demais.
  */
 export function chanceContraUma(valor: number, visao: PlayerView): number {
-  // Aproximação: não desconta os quatro comuns que viraram coringa.
-  const porValor = (v: number): number => (v > MAIOR ? 1 : 4);
+  // Coringas: um de cada naipe. Com a vira à vista, o valor do coringa não
+  // tem mais cartas comuns; sem ela (testa), cada valor tem 1 em 10 de ser ele.
+  const coringa = visao.vira ? rankValue(coringaRank(visao.vira.rank)) : null;
+  const porValor = (v: number): number =>
+    v > MAIOR ? 1 : coringa === null ? 3.6 : v === coringa ? 0 : 4;
   const vistas = cartasVistas(visao);
 
   let acimaOuIgual = 0;

@@ -13,33 +13,36 @@ export function Regras() {
   return (
     <div className="pilha">
     <Bloco titulo="O objetivo">
-      Você começa com <b>5 vidas</b>. A cada rodada declara <b>quantas mãos
+      Você começa com <b>3 vidas</b>. A cada rodada declara <b>quantas mãos
       vai ganhar</b>. Errou a aposta, perde uma vida por mão de diferença —
-      para mais ou para menos. Zerou, está fora. Último de pé vence.
+      para mais ou para menos. A partida acaba quando <b>alguém zera</b>: vence
+      quem tiver mais vidas. Aí é só pedir revanche.
     </Bloco>
 
-    <Bloco titulo="A aposta que ninguém quer">
-      A soma das apostas da mesa <b>nunca pode fechar</b> com o número de
-      mãos da rodada. Quem aposta por último fica proibido do valor que
-      fecharia a conta — e é obrigado a estragar a vida de alguém, inclusive
-      a própria. <b>Não existe rodada em que todo mundo acerta.</b>
+    <Bloco titulo="A aposta">
+      <b>Aposta livre</b>: a soma das apostas pode fechar com o número de mãos
+      da rodada. As rodadas vão de 1 carta em 1 carta até o máximo que o
+      baralho permite para a mesa, e depois voltam a 1.
     </Bloco>
 
     <Bloco titulo="Jogando as mãos">
-      Ganha a mão a <b>carta mais alta</b>, na ordem 2 3 4 5 6 7 8 9 10 J Q
-      K A. E é só isso:
+      Baralho de 40 cartas, sem 8, 9 e K. Ganha a mão a <b>carta mais alta</b>,
+      na ordem 4 5 6 7 10 J Q A 2 3.
       <ul style={{ margin: '8px 0 0 18px', display: 'grid', gap: 4 }}>
-        <li><b>Naipe não vale nada</b> — é ilustração da carta.</li>
-        <li><b>Não existe trunfo</b> nem manilha.</li>
+        <li><b>Coringa</b>: a cada rodada vira-se uma carta, e o valor seguinte
+          a ela é o coringa (depois do 3 volta ao 4). Coringa ganha de todas.</li>
+        <li>Entre coringas, vale o naipe: <b>paus &gt; copas &gt; espadas &gt; ouros</b>.</li>
+        <li>Fora do coringa, <b>naipe não vale nada</b>.</li>
         <li><b>Não precisa seguir naipe</b>: todas as suas cartas são sempre jogáveis.</li>
-        <li>Empate na maior carta? <b>Ninguém leva a mão.</b></li>
+        <li>Cartas iguais que não são coringa <b>empardam</b>: ninguém leva com elas.</li>
       </ul>
     </Bloco>
 
     <Bloco titulo="A rodada de uma carta só">
       Na rodada de 1 carta, você <b>não vê a sua própria carta</b>. Ela fica
       virada para fora, à vista de todos os outros. Você aposta olhando a
-      cara e as cartas deles — e eles, a sua.
+      cara e as cartas deles — e eles, a sua. <b>Ninguém vê o coringa</b> até
+      a revelação.
     </Bloco>
 
     <Bloco titulo="Já era">

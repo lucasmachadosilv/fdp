@@ -173,7 +173,7 @@ function leituraDasApostas(visao: PlayerView): number {
     // Só informa quando o que ele vê, fora a minha, é baixo: aí a decisão dele
     // dependeu da minha carta. Se ele já enxerga um Ás, a aposta dele não diz
     // nada sobre mim.
-    if (maiorParaEle >= 8) continue;
+    if (maiorParaEle >= 7) continue;
 
     sinal += aposta >= 1 ? 0.12 : -0.12;
   }
@@ -257,10 +257,6 @@ function maiorQueGanha(cartas: readonly Card[], naMesa: number): Card | undefine
  * A maior que ainda perde — livrar-se da carta mais perigosa sem levar a mão.
  * Se todas ganham, o estrago é inevitável e joga-se a menor.
  *
- * O REALISTA acrescenta o risco de quem ainda vai jogar: com gente atrás, uma
- * carta "que perde" para a mesa atual pode acabar ganhando se todos derem
- * carta baixa. Ele exige que a carta tenha chance real de perder, e não só que
- * esteja abaixo do que está na mesa agora.
  */
 function descarte(
   cartas: readonly Card[],
@@ -269,14 +265,10 @@ function descarte(
   visao: PlayerView,
   dificuldade: Dificuldade,
 ): Card {
+  // O REALISTA exigia aqui uma margem contra quem joga depois. Com o baralho
+  // de 40 e o coringa isso passou a custar partidas (torneio de 400: 292 × 331
+  // a favor de tirar), então o descarte é o mesmo do DIFÍCIL.
   const perdedoras = cartas.filter((c) => c.value < naMesa);
-
-  if (dificuldade === 'REALISTA' && atras > 0) {
-    const seguras = perdedoras.filter((c) => chanceDeGanhar(c.value, atras, visao) <= 0.35);
-    const melhor = seguras[seguras.length - 1];
-    if (melhor) return melhor;
-  }
-
   return perdedoras[perdedoras.length - 1] ?? cartas[0]!;
 }
 

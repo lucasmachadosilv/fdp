@@ -69,7 +69,8 @@ export const roomCodeSchema = z
 
 export const matchOptionsSchema = z.object({
   vidasIniciais: z.int().min(1).max(10),
-  maxCartasPorRodada: z.int().min(1).max(10),
+  // 19 = o que cabe no baralho de 40 com 2 jogadores e a vira.
+  maxCartasPorRodada: z.int().min(1).max(19),
   regraEmpate: z.enum(['EMPATE_ANULA_VAZA', 'EMPATE_ANULA_CARTAS']),
 });
 

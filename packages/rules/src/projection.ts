@@ -74,6 +74,12 @@ export interface PlayerView {
    */
   allHands: Record<PlayerId, Card[]>;
 
+  /**
+   * A carta virada; o coringa é o valor seguinte a ela. `null` antes de
+   * distribuir e, na rodada de testa, até a revelação: lá ninguém vê o coringa.
+   */
+  vira: Card | null;
+
   stockCount: number;
   currentTrick: PublicTrick | null;
   resolvedTricks: PublicTrick[];
@@ -149,6 +155,10 @@ export function project(state: MatchState, viewerId: PlayerId): PlayerView {
 
   const isViewersTurn = round.activePlayerId === viewerId;
 
+  const viraEscondida =
+    round.isForeheadRound && round.phase !== 'REVELACAO' && round.phase !== 'RESOLUCAO';
+  const vira = hidden.vira != null && !viraEscondida ? hidden.cards[hidden.vira]! : null;
+
   return {
     matchId: state.id,
     options: state.options,
@@ -176,6 +186,7 @@ export function project(state: MatchState, viewerId: PlayerId): PlayerView {
     allHands,
     foreheadCards,
 
+    vira,
     stockCount: hidden.stock.length,
     currentTrick: toPublicTrick(round.currentTrick),
     resolvedTricks: round.resolvedTricks

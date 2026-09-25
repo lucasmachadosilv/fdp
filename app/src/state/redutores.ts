@@ -212,6 +212,7 @@ function aplicar(retrato: Retrato, evento: ServerEvent): Reducao {
       return comPartida(retrato, {
         ...m,
         foreheadCards: p['cards'] as unknown as PlayerView['foreheadCards'],
+        vira: (p['vira'] as unknown as PlayerView['vira'] | undefined) ?? m.vira,
       });
     }
 

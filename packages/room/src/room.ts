@@ -1345,7 +1345,9 @@ export function translate(events: readonly EngineEvent[], room: Room): Emission[
           const card = match.hidden.cards[event.cards[pid]!];
           if (card) cards[pid] = card;
         }
-        emissions.push(all({ type: 'round:revealed', payload: { cards } }));
+        // Na testa o coringa só aparece agora, junto com as cartas.
+        const vira = event.vira === null ? null : match.hidden.cards[event.vira] ?? null;
+        emissions.push(all({ type: 'round:revealed', payload: { cards, vira } }));
         break;
       }
 

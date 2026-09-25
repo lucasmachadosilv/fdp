@@ -410,7 +410,7 @@ function applyBet(state: MatchState, playerId: PlayerId, bet: number): MoveResul
       const cardId = cardIds[0];
       if (cardId) naTesta[playerId] = cardId;
     }
-    events.push({ type: 'round:revealed', cards: naTesta });
+    events.push({ type: 'round:revealed', cards: naTesta, vira: state.hidden.vira });
     events.push({ type: 'round:phaseChanged', phase: 'REVELACAO', activePlayerId: null });
     return {
       ok: true,
@@ -765,7 +765,15 @@ function resolveRound(state: MatchState): MoveResult {
   const events: EngineEvent[] = [{ type: 'round:resolved', summary }];
   const survivors = activePlayers(afterState);
 
-  // RJ-004
+  // A partida acaba na primeira eliminação: vence, entre quem sobrou, quem tem
+  // mais vidas; empate é vitória compartilhada. A revanche recomeça com todos.
+  if (eliminatedThisRound.length > 0 && survivors.length > 0) {
+    const most = Math.max(...survivors.map((id) => lives[id]!));
+    const winners = survivors.filter((id) => lives[id] === most);
+    return finish(afterState, winners, 'VITORIA', events);
+  }
+
+  // RJ-004: sobrou um só sem ninguém cair (a mesa já começou assim).
   if (survivors.length === 1) {
     return finish(afterState, [survivors[0]!], 'VITORIA', events);
   }

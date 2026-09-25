@@ -239,7 +239,7 @@ export type EngineEvent =
   | { type: 'move:cardPlayed'; playerId: PlayerId; cardId: CardId; trickNumber: number }
   | { type: 'trick:resolved'; trickNumber: number; winnerId: PlayerId | null; annulledValue: number | null; nextLeaderId: PlayerId | null }
   | { type: 'player:doomed'; playerId: PlayerId; trickNumber: number }
-  | { type: 'round:revealed'; cards: Record<PlayerId, CardId> }
+  | { type: 'round:revealed'; cards: Record<PlayerId, CardId>; vira: CardId | null }
   | { type: 'round:decidedEarly'; trickNumber: number; skippedTricks: number }
   | { type: 'round:resolved'; summary: RoundSummary }
   | { type: 'round:aborted'; roundNumber: number; withdrawnPlayerIds: PlayerId[] }

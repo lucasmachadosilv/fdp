@@ -170,6 +170,34 @@ describe('CA-200/CA-303: determinismo', () => {
   });
 });
 
+describe('fim na primeira eliminação', () => {
+  it('a partida acaba na rodada em que alguém cai; vence quem tem mais vidas', () => {
+    for (let i = 0; i < 60; i++) {
+      const n = 2 + (i % 7);
+      let cursor = i;
+      const { state, violations } = playMatch(`primeira-${i}`, n, {}, (_, legal) => {
+        cursor = (cursor * 1103515245 + 12345) >>> 0;
+        return legal[cursor % legal.length]!;
+      });
+      expect(violations).toEqual([]);
+      expect(state.endReason).toBe('VITORIA');
+
+      // Todos os eliminados caíram na mesma rodada, a última.
+      const rodadas = new Set(state.eliminated.map((e) => e.roundNumber));
+      expect(rodadas.size).toBe(1);
+      expect([...rodadas][0]).toBe(state.roundNumber);
+
+      const vivos = state.playerOrder.filter((id) => state.lives[id]! > 0);
+      if (vivos.length > 0) {
+        const mais = Math.max(...vivos.map((id) => state.lives[id]!));
+        expect([...state.winnerIds!].sort()).toEqual(
+          vivos.filter((id) => state.lives[id] === mais).sort(),
+        );
+      }
+    }
+  });
+});
+
 // --- CA-210 / CA-211: distribuição -----------------------------------------
 
 describe('CA-210/CA-211: distribuição', () => {

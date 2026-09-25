@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { LIMITS } from '@fdp/protocol';
+import { coringaRank } from '@fdp/rules';
 import { deveAvisarVez, fracaoDaBarra, intervaloDoTique, urgenciaDoTique, verPrazo } from '../avisos';
 import type { PrazoVisto } from '../avisos';
 import { tocarSuaVez, tocarTique } from '../som';
@@ -57,6 +58,8 @@ export function Mesa({ retrato, eu, partida, selecionada, aoSelecionar, aoAposta
       <AvisoDaVaza partida={partida} nome={nome} eu={eu} />
 
       {partida.isForeheadRound && <FaixaTesta />}
+
+      {partida.vira && <Vira vira={partida.vira} />}
 
       {/* O zoom do desktop (RF-08x).
 
@@ -347,7 +350,7 @@ function AvisoDaVaza({ partida, nome, eu }: {
       // Empate silencioso passa por bug (`07` §2.4): diz o valor e quem puxa.
       const puxa = ultima.nextLeaderId;
       setAviso(
-        `Empate em ${ultima.annulledValue} — ninguém levou a mão.` +
+        `Empate em ${valorEmpatado(ultima)} — ninguém levou a mão.` +
         (puxa ? ` ${puxa === eu ? 'Você puxa' : `${nome(puxa)} puxa`} a próxima.` : ''),
       );
     } else {
@@ -393,14 +396,34 @@ function FaixaTesta() {
       fontSize: 13,
     }}>
       <b>Rodada de testa.</b> Você não vê a sua carta — todos os outros veem.
-      Aposte pela cara deles.
+      Ninguém vê o coringa. Aposte pela cara deles.
     </div>
   );
 }
 
+/** A carta virada e o coringa que ela define para a rodada. */
+function Vira({ vira }: { vira: PlayerView['vira'] & object }) {
+  return (
+    <div className="cartao" style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 13 }}>
+      <Carta carta={vira} tamanho="mini" rotulo={`Vira: ${vira.rank} de ${vira.suit}`} />
+      <span>
+        Coringa: <b>{coringaRank(vira.rank)}</b>
+        <span className="fraco"> · paus &gt; copas &gt; espadas &gt; ouros</span>
+      </span>
+    </div>
+  );
+}
+
+/** `annulledValue` é força, não nome: o nome sai da carta empatada. */
+function valorEmpatado(vaza: NonNullable<PlayerView['currentTrick']>): string {
+  const carta = vaza.plays.find((p) => p.card.value === vaza.annulledValue)?.card;
+  return carta?.rank ?? String(vaza.annulledValue);
+}
+
 function EmpateNaVaza({ partida }: { partida: PlayerView }) {
-  const valor = partida.currentTrick?.annulledValue;
-  if (valor === null || valor === undefined) return null;
+  const vaza = partida.currentTrick;
+  if (!vaza || vaza.annulledValue === null) return null;
+  const valor = valorEmpatado(vaza);
   return (
     <div style={{
       padding: '8px 12px', borderRadius: 'var(--r-md)', fontSize: 13,

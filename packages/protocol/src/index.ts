@@ -270,7 +270,7 @@ export type ServerEvent =
   | { type: 'move:betPlaced'; payload: { playerId: PlayerId; bet: number; betsSoFar: Record<PlayerId, number>; forbiddenBet: number | null } }
   | { type: 'move:cardPlayed'; payload: { playerId: PlayerId; card: Card; trickNumber: number; nextPlayerId: PlayerId | null; deadline: number | null } }
   | { type: 'trick:resolved'; payload: { trickNumber: number; winnerId: PlayerId | null; annulled: boolean; annulledValue: number | null; nextLeaderId: PlayerId | null; tricksWon: Record<PlayerId, number>; nextTrick: PublicTrick | null; nextTrickNumber: number; mortoEmVaza: Record<PlayerId, number | null> } }
-  | { type: 'round:revealed'; payload: { cards: Record<PlayerId, Card> } }
+  | { type: 'round:revealed'; payload: { cards: Record<PlayerId, Card>; vira: Card | null } }
   | { type: 'move:autoPlayed'; payload: { playerId: PlayerId; kind: 'BET' | 'CARD'; value: number | Card } }
   // EV-030..EV-034 — pausa (`03` §1.2)
   | { type: 'match:paused'; payload: PauseInfo }
