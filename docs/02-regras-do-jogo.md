@@ -3,9 +3,9 @@
 Status: **ESTÁVEL**
 
 FDP é um jogo de vazas com aposta declarada e blefe, para 2 a 8 jogadores. Cada jogador
-declara quantas vazas pretende ganhar na rodada e perde vidas na medida em que erra. Uma regra
-estrutural garante que a soma das apostas **nunca** feche com o número de vazas disponíveis —
-por isso alguém sempre se dá mal.
+declara quantas vazas pretende ganhar na rodada e perde vidas na medida em que erra. A aposta
+é livre, o baralho é de 40 cartas e a cada rodada uma carta virada define o **coringa**. A
+partida acaba na primeira eliminação.
 
 Referência: o jogo é da família do **Fodinha** brasileiro (parente do Oh Hell). Onde este
 documento e a tradição divergirem, **este documento vence**.
@@ -30,17 +30,19 @@ De [00-visao-e-escopo.md](./00-visao-e-escopo.md):
 Texto-base da tela de regras (RF-015):
 
 > Cada rodada tem um número de cartas. Você aposta quantas vazas vai ganhar. Depois joga.
-> Errou a aposta? Perde vidas — uma por vaza de diferença. Zerou as vidas, está fora.
-> Último de pé vence.
+> Errou a aposta? Perde vidas — uma por vaza de diferença. Você começa com 3. Quando alguém
+> zera, a partida acaba e vence quem tiver mais vidas.
 >
-> **A pegadinha:** a soma das apostas da mesa nunca pode bater com o número de vazas. O último
-> a apostar é obrigado a estragar a conta de alguém.
+> **Aposta livre:** a soma das apostas pode bater com o número de vazas.
+>
+> **O baralho:** 40 cartas, sem 8, 9 e K. Força: 4 5 6 7 10 J Q A 2 3.
+>
+> **O coringa:** a cada rodada vira-se uma carta; a seguinte na ordem é o coringa (depois do 3
+> volta ao 4). Coringa ganha de tudo, e entre coringas vale o naipe: paus > copas > espadas >
+> ouros. Cartas iguais que não são coringa empardam.
 >
 > **A rodada de 1 carta:** você não vê a sua carta. Ela vai na sua testa e todo mundo vê,
-> menos você. Aposte no escuro.
->
-> **Mesa cheia:** com muita gente, entra mais de um baralho. Cartas repetidas passam a existir
-> e empate vira coisa comum — e no empate, a vaza pode não ser de ninguém.
+> menos você. E ninguém vê o coringa. Aposte no escuro.
 
 ---
 
@@ -50,10 +52,10 @@ Texto-base da tela de regras (RF-015):
 
 | ID | Regra |
 |---|---|
-| RJ-001 | Cada jogador começa com `vidasIniciais` vidas (padrão 5, configurável). |
+| RJ-001 | Cada jogador começa com `vidasIniciais` vidas (padrão 3, configurável). |
 | RJ-002 | Ao fim de cada rodada, cada jogador perde `\|aposta − vazasGanhas\|` vidas. |
 | RJ-003 | Um jogador cujas vidas chegam a 0 é **eliminado** e sai da partida imediatamente após o débito de vidas da rodada. |
-| RJ-004 | A partida termina quando resta **1 jogador ativo**. Ele é o vencedor. |
+| RJ-004 | A partida termina ao fim da **primeira rodada com eliminação**. Vencem, entre os que sobraram, os de **mais vidas**; empate é vitória compartilhada e `winnerIds` contém todos. Se sobrar 1 ativo por outro motivo (retirada, RJ-156), ele vence. Jogar de novo é a revanche, que recomeça com todos. |
 | RJ-005 | Se **todos** os jogadores ativos restantes forem eliminados na mesma rodada, vence quem **morreu por último** dentro da rodada, conforme §3.1.1. |
 | RJ-006 | As vidas de todos os jogadores são informação **pública** durante toda a partida. |
 
@@ -106,28 +108,26 @@ que acaba com cartas na mão de todo mundo, sem explicação, parece defeito.
 
 | ID | Regra |
 |---|---|
-| RJ-020 | A unidade é o baralho francês padrão de **52 cartas**, sem coringas. |
-| RJ-021 | Valores, em ordem crescente: `2 3 4 5 6 7 8 9 10 J Q K A`. `A` é a carta mais alta. |
-| RJ-022 | **Naipe não tem efeito algum** sobre o jogo. É apenas ilustração da carta. |
+| RJ-020 | O baralho tem **40 cartas**: o francês padrão sem 8, 9 e K. |
+| RJ-021 | Força, em ordem crescente: `4 5 6 7 10 J Q A 2 3`. `3` é a carta comum mais alta. |
+| RJ-022 | Fora do coringa (RJ-028), **naipe não tem efeito algum**. É apenas ilustração da carta. |
 | RJ-023 | Não existe obrigação de seguir naipe. Qualquer carta da mão é sempre jogável. |
-| RJ-024 | O número de baralhos da rodada é `baralhos = ceil(jogadoresAtivos × cartasNaRodada / 52)`, com mínimo de 1. |
-| RJ-025 | Os baralhos são embaralhados **juntos**, como um sabot único de `52 × baralhos` cartas. |
-| RJ-026 | Com mais de um baralho existem **cartas idênticas em valor e naipe**. Elas são cartas distintas (`CardId` distintos) e empatam entre si normalmente. |
-| RJ-027 | O sabot é regerado e reembaralhado **a cada rodada**. Cartas não se acumulam entre rodadas. |
+| RJ-024 | Usa-se sempre **um baralho só**. O número de cartas por rodada é que se limita a caber nele (RJ-037). |
+| RJ-025 | O baralho é embaralhado inteiro a cada rodada. |
+| RJ-026 | Não existem cartas idênticas em valor e naipe: com um baralho só, cada carta é única. Cartas de mesmo valor e naipes diferentes existem e, fora do coringa, empardam. |
+| RJ-027 | O baralho é regerado e reembaralhado **a cada rodada**. Cartas não se acumulam entre rodadas. |
+| RJ-028 | **Coringa.** Distribuídas as mãos, vira-se a carta seguinte do baralho (a **vira**). O coringa da rodada é o valor **seguinte** ao da vira na ordem de RJ-021, e depois do `3` volta ao `4`. As quatro cartas desse valor ganham de qualquer carta comum. |
+| RJ-029 | Entre coringas decide o naipe: `paus > copas > espadas > ouros`. Coringas nunca empatam. |
 
 Valor numérico usado na comparação:
 
-| Carta | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | J | Q | K | A |
-|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| Valor | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 | 14 |
+| Carta | 4 | 5 | 6 | 7 | 10 | J | Q | A | 2 | 3 | coringa ♦ | coringa ♠ | coringa ♥ | coringa ♣ |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| Valor | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 | 14 |
 
-RJ-024 substitui qualquer limite artificial de cartas por jogador: a mesa cresce, o número de
-baralhos acompanha. Com 8 jogadores e 7 cartas são 56 cartas — 2 baralhos.
-
-**Consequência de projeto (RJ-026):** a partir de 2 baralhos, empates deixam de ser raridade e
-viram mecânica corrente. O modo de empate escolhido no lobby (§3.10) passa a ter peso
-estratégico grande, e vazas anuladas ficam frequentes em `EMPATE_ANULA_VAZA`. Isso é
-comportamento pretendido, não defeito — mas **DEVE** ser comunicado no lobby (RJ-134).
+O valor é da rodada: é calculado na distribuição, com a vira conhecida, e é o único número que
+a resolução de vaza compara. Com a vira `3`, por exemplo, os quatro `4` viram coringa — a carta
+mais fraca da ordem passa a ser a mais forte.
 
 ### 3.3 Setup da partida
 
@@ -143,9 +143,9 @@ comportamento pretendido, não defeito — mas **DEVE** ser comunicado no lobby 
 
 | ID | Regra |
 |---|---|
-| RJ-035 | O número de cartas cresce de 1 em 1 a cada rodada até atingir o teto `M = maxCartasPorRodada`, e então **volta a 1**. É serrote, não vai-e-volta: `1,2,3,4,5,6,7,1,2,3,…` |
+| RJ-035 | O número de cartas cresce de 1 em 1 a cada rodada até atingir o teto `M`, e então **volta a 1**. É serrote, não vai-e-volta: `1,2,3,4,1,2,…`. Como a partida acaba na primeira eliminação (RJ-004), o serrote só se repete enquanto ninguém cai. |
 | RJ-036 | `cartasNaRodada(r) = cartasNaRodada(r-1) >= M ? 1 : cartasNaRodada(r-1) + 1`, com `cartasNaRodada(1) = 1`. |
-| RJ-037 | `M` **não** é reduzido por número de jogadores. A limitação física é resolvida por baralhos adicionais (RJ-024). |
+| RJ-037 | `M = min(maxCartasPorRodada, ⌊39 / jogadoresAtivos⌋)`: as mãos de todos e a vira cabem no baralho de 40. Com 2 jogadores, 19; com 8, 4. Numa retirada (RJ-155), a rodada redistribuída nunca passa do novo `M`. |
 | RJ-038 | O primeiro apostador **rotaciona**: a cada rodada passa ao próximo jogador **ativo** em sentido horário a partir do primeiro apostador da rodada anterior. |
 | RJ-039 | Se o primeiro apostador da rodada anterior deixou a partida, a rotação parte da posição que ele ocupava em `playerOrder` e avança até o próximo jogador ativo. |
 
@@ -167,7 +167,7 @@ stateDiagram-v2
 
 | Fase | Quem age | Ação | Timer |
 |---|---|---|---|
-| `DISTRIBUICAO` | ninguém | Servidor monta o sabot, embaralha e distribui | — |
+| `DISTRIBUICAO` | ninguém | Servidor embaralha o baralho, distribui e vira a carta do coringa | — |
 | `APOSTAS` | um por vez, em ordem | `move:bet` | `BET_TIMEOUT` |
 | `VAZAS` | um por vez, em ordem | `move:playCard` | `PLAY_TIMEOUT` |
 | `RECOLHIMENTO` | ninguém | Vaza fechada ainda na mesa, antes de recolher (`07` §2.4) | pausa fixa |
@@ -181,10 +181,10 @@ Em qualquer instante, no máximo um jogador tem o direito de agir.
 
 | ID | Regra |
 |---|---|
-| RJ-040 | Monta-se o sabot com `baralhos` baralhos (RJ-024) e embaralha-se com Fisher-Yates usando o RNG semeado da partida. |
+| RJ-040 | Monta-se o baralho de 40 (RJ-020) e embaralha-se com Fisher-Yates usando o RNG semeado da partida. |
 | RJ-041 | Distribui-se `cartasNaRodada` cartas a cada jogador ativo, uma por vez, em `playerOrder`, a partir do primeiro apostador. |
-| RJ-042 | As cartas restantes formam o monte, que **não é usado** nesta rodada e permanece oculto de todos. |
-| RJ-043 | Por construção de RJ-024, o sabot **sempre** tem cartas suficientes. Violação é bug de severidade 1. |
+| RJ-042 | A carta seguinte às mãos é a **vira** (RJ-028). As restantes formam o monte, que **não é usado** nesta rodada e permanece oculto de todos. |
+| RJ-043 | Por construção de RJ-037, o baralho **sempre** tem cartas suficientes para as mãos e a vira. Violação é bug de severidade 1. |
 
 #### 3.5.2 `APOSTAS`
 
@@ -193,16 +193,10 @@ Em qualquer instante, no máximo um jogador tem o direito de agir.
 | RJ-050 | A ordem de aposta é: primeiro apostador da rodada, e daí em sentido horário por todos os jogadores ativos. |
 | RJ-051 | Uma aposta é um inteiro no intervalo `[0, cartasNaRodada]`. |
 | RJ-052 | Cada aposta é **pública** assim que declarada. Quem aposta depois vê todas as anteriores. |
-| RJ-053 | **Regra da soma proibida:** ao final da fase, `soma(apostas) ≠ cartasNaRodada`. |
-| RJ-054 | A restrição de RJ-053 recai **exclusivamente sobre o último apostador**. Seu valor proibido é `cartasNaRodada − soma(apostasAnteriores)`. |
-| RJ-055 | Se o valor proibido de RJ-054 estiver fora de `[0, cartasNaRodada]`, o último apostador não tem restrição alguma. |
-| RJ-056 | Uma aposta que viole RJ-054 é rejeitada com `ERR-007` e motivo `SOMA_PROIBIDA`. |
-
-Como o intervalo tem no mínimo 2 valores (`0` e `1`) e apenas 1 pode ser proibido, o último
-apostador **sempre** tem ao menos uma aposta legal. A fase nunca trava.
-
-**Exemplo (5 jogadores, 2 cartas):** apostas anteriores `0, 0, 1, 0` somam 1. Valor proibido do
-último = `2 − 1 = 1`. Ele pode apostar `0` (soma 1) ou `2` (soma 3). Não pode apostar `1`.
+| RJ-053 | **Aposta livre:** a soma das apostas **pode** ser igual a `cartasNaRodada`. |
+| RJ-054 | *Revogada.* Não há valor proibido para o último apostador. |
+| RJ-055 | *Revogada* com RJ-054. |
+| RJ-056 | *Revogada* com RJ-054. O motivo `SOMA_PROIBIDA` deixou de existir; o campo `forbiddenBet` segue no protocolo, sempre `null`. |
 
 #### 3.5.3 `VAZAS` — só quando `cartasNaRodada > 1`
 
@@ -221,9 +215,10 @@ apostador **sempre** tem ao menos uma aposta legal. A fase nunca trava.
 | ID | Regra |
 |---|---|
 | RJ-070 | Na rodada de 1 carta, a carta vai **na testa**: o dono **não** a vê; todos os outros veem. |
+| RJ-070a | Na rodada de 1 carta **ninguém vê o coringa** até `REVELACAO`: a vira não é enviada, e as cartas da testa vão com a força da ordem simples (RJ-021), não com a do coringa, que o denunciaria. O coringa vale normalmente na resolução. |
 | RJ-071 | Isso vale em **toda** rodada de 1 carta — a rodada 1 e todo reinício de ciclo. |
 | RJ-072 | Não há fase de vazas: a única carta de cada jogador já está na mesa desde a distribuição. |
-| RJ-073 | Encerradas as apostas, todas as cartas são reveladas aos seus donos simultaneamente e a vaza única é resolvida por §3.6.1. |
+| RJ-073 | Encerradas as apostas, todas as cartas e a vira são reveladas simultaneamente e a vaza única é resolvida por §3.6.1. |
 | RJ-074 | Para efeito de §3.6.2, a ordem de jogada da vaza única é a ordem de aposta. |
 | RJ-075 | Numa rodada de testa, todos os jogadores que morrem, morrem na vaza 1 — logo, por RJ-010, empatam entre si. |
 
@@ -254,22 +249,25 @@ enquanto restantes não estiver vazio:
 ninguém vence a vaza
 ```
 
+Exemplos sem coringa na mesa:
+
 | Mesa | `ANULA_VAZA` | `ANULA_CARTAS` |
 |---|---|---|
-| `A K 5 3` | A vence | A vence |
-| `A A K 5 3` | ninguém | **K vence** |
-| `A A K K 5` | ninguém | **5 vence** |
-| `A A K K` | ninguém | ninguém |
-| `A A A A A` | ninguém | ninguém |
+| `3 2 5 4` | 3 vence | 3 vence |
+| `3 3 2 5 4` | ninguém | **2 vence** |
+| `3 3 2 2 5` | ninguém | **5 vence** |
+| `3 3 2 2` | ninguém | ninguém |
+| `3 3 3 3` | ninguém | ninguém |
+
+Um coringa na mesa sempre vence: coringas não empatam entre si (RJ-029).
 
 | ID | Regra |
 |---|---|
 | RJ-080 | Uma vaza sem vencedor **não é creditada a ninguém**. A soma de vazas ganhas na rodada pode ser menor que `cartasNaRodada`. |
 | RJ-081 | O modo de empate é fixado no início da partida e não muda durante ela. |
 
-RJ-080 tem consequência estratégica direta, amplificada por RJ-026: com múltiplos baralhos e
-`EMPATE_ANULA_VAZA`, apostas altas ficam bem mais arriscadas, porque vazas evaporam com
-frequência.
+RJ-080 tem consequência estratégica direta: em `EMPATE_ANULA_VAZA`, uma vaza sem coringa em
+que as duas maiores cartas têm o mesmo valor evapora.
 
 #### 3.6.2 Quem puxa a vaza seguinte
 
@@ -279,8 +277,8 @@ frequência.
 | RJ-086 | Se a vaza não teve vencedor, puxa **o responsável pelo empate**: o **último jogador, na ordem de jogada daquela vaza**, a jogar uma carta do valor empatado mais alto. |
 | RJ-087 | Em `ANULA_CARTAS` com múltiplos grupos anulados e nenhum vencedor, considera-se o **grupo de valor mais alto** para aplicar RJ-086. |
 
-**Exemplo de RJ-086:** ordem de jogada `P1:K`, `P2:A`, `P3:5`, `P4:A`. Valor empatado mais alto
-= A, jogado por P2 e P4. O último a jogá-lo foi **P4** — ele puxa a vaza seguinte.
+**Exemplo de RJ-086:** ordem de jogada `P1:2`, `P2:3`, `P3:5`, `P4:3`, sem coringa. Valor empatado
+mais alto = 3, jogado por P2 e P4. O último a jogá-lo foi **P4** — ele puxa a vaza seguinte.
 
 #### 3.6.3 Débito de vidas e registro de mortes
 
@@ -306,13 +304,14 @@ Matriz canônica; implementa `04` §5 e as invariantes INV-07 e INV-13.
 |---|---|---|---|
 | Mão própria, rodada de N>1 cartas | **vê** | conta apenas | conta apenas |
 | Mão própria, rodada de 1 carta (testa) | **NÃO vê** | **vê a carta** | **vê a carta** |
+| Vira e coringa, rodada de N>1 cartas | vê | vê | vê |
+| Vira e coringa, rodada de 1 carta, antes de `REVELACAO` | oculto | oculto | oculto |
 | Cartas já jogadas na vaza corrente | vê | vê | vê |
 | Vazas de rodadas anteriores | vê | vê | vê |
 | Apostas já declaradas | vê | vê | vê |
 | Vidas de todos | vê | vê | vê |
 | Vazas ganhas na rodada corrente | vê | vê | vê |
 | `mortoEmVaza` | vê | vê | vê |
-| Número de baralhos em uso | vê | vê | vê |
 | Monte não distribuído | oculto | oculto | oculto |
 | `seed` da partida | oculto | oculto | oculto |
 
@@ -375,7 +374,7 @@ quem caiu não tem como.
 | RJ-111 | `PLAY_TIMEOUT` = 30 s. Prazo do jogador da vez na fase de vazas. |
 | RJ-112 | Os prazos de RJ-110 e RJ-111 aplicam-se **apenas a jogador `CONECTADO`**. |
 | RJ-113 | Estourado o prazo, o servidor executa o **auto-play** e a partida avança. |
-| RJ-114 | Auto-play em `APOSTAS`: aposta **0**; se 0 for proibido por RJ-054, aposta **1**. |
+| RJ-114 | Auto-play em `APOSTAS`: aposta **0** (com aposta livre, sempre legal). |
 | RJ-115 | Auto-play em `VAZAS`: joga a carta de **menor valor** da mão; empate de valor resolve pelo menor `CardId` (determinístico). |
 | RJ-116 | Todo auto-play **DEVE** gerar `EV-024` visível na mesa, identificando o jogador. |
 
@@ -443,13 +442,13 @@ dispara sem que ninguém possa fazer nada.
 
 | ID | Situação | Regra |
 |---|---|---|
-| RJ-120 | Restam 2 jogadores | Tudo se aplica sem alteração. Na rodada de 1 carta, a aposta do segundo é frequentemente forçada por RJ-054 — comportamento correto, não bug. |
-| RJ-121 | Jogadores ativos caem a 1 | Partida encerra com esse jogador como vencedor (RJ-004). |
+| RJ-120 | Restam 2 jogadores | Tudo se aplica sem alteração; o teto sobe para 19 cartas (RJ-037). |
+| RJ-121 | Alguém é eliminado | Partida encerra ao fim da rodada; vencem os de mais vidas entre os que sobraram (RJ-004). |
 | RJ-122 | Todos os ativos zeram vidas na mesma rodada | Vence quem morreu por último (RJ-005, RJ-010). |
 | RJ-158 | Resta 1 ou 0 ativos ainda não mortos, com vazas por jogar | A rodada encerra na hora (RJ-014); o débito sai pelo piso de RJ-015. |
 | RJ-123 | Todos morrem na mesma vaza | Todos vencem, `winnerIds` os contém (RJ-010). |
-| RJ-124 | Todas as vazas de uma rodada são anuladas | Todos ganharam 0 vazas; quem apostou 0 não perde vida. Situação legítima e comum com múltiplos baralhos. |
-| RJ-125 | Sabot insuficiente | Impossível por RJ-024. **DEVE** haver asserção defensiva (RJ-043). |
+| RJ-124 | Todas as vazas de uma rodada são anuladas | Todos ganharam 0 vazas; quem apostou 0 não perde vida. Situação legítima. |
+| RJ-125 | Baralho insuficiente | Impossível por RJ-037. **DEVE** haver asserção defensiva (RJ-043). |
 | RJ-126 | Jogador desconecta no meio da fase de apostas | Partida pausa (RJ-117); ao retomar, ele aposta normalmente. |
 | RJ-127 | Jogadores **saem** deixando menos de 2 ativos | Partida encerra por RJ-156. |
 | RJ-128 | Retirada por RJ-154 durante a fase de vazas | A rodada é abortada por RJ-155; ninguém perde vida por ela. |
@@ -461,8 +460,8 @@ Definidas pelo host no lobby, imutáveis durante a partida.
 
 ```ts
 interface MatchOptions {
-  vidasIniciais: number;              // 1..10, padrão 5
-  maxCartasPorRodada: number;         // 1..10, padrão 7
+  vidasIniciais: number;              // 1..10, padrão 3
+  maxCartasPorRodada: number;         // 1..19, padrão 19 (sem teto próprio: vale RJ-037)
   regraEmpate: 'EMPATE_ANULA_VAZA' | 'EMPATE_ANULA_CARTAS';  // padrão EMPATE_ANULA_CARTAS
 }
 ```
@@ -472,8 +471,8 @@ interface MatchOptions {
 | RJ-130 | As opções **DEVEM** ser visíveis a todos no lobby antes do início, não só ao host. |
 | RJ-131 | Alterar opções **DEVE** emitir `EV-007` a todos. |
 | RJ-132 | As opções vigentes **DEVEM** ficar consultáveis durante a partida, na tela de regras. |
-| RJ-133 | O lobby **DEVE** exibir quantos baralhos a configuração vai exigir no pico (`ceil(jogadores × maxCartasPorRodada / 52)`). |
-| RJ-134 | Quando o pico exigir mais de 1 baralho, o lobby **DEVE** avisar que haverá cartas repetidas e mais empates (RJ-026). |
+| RJ-133 | *Revogada.* O baralho é sempre um só (RJ-024). |
+| RJ-134 | *Revogada* com RJ-133. |
 
 ---
 
