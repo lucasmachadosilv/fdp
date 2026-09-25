@@ -118,7 +118,12 @@ export interface HiddenState {
   /** Resto do sabot, não distribuído nesta rodada (RJ-042). */
   stock: CardId[];
   hands: Record<PlayerId, CardId[]>;
-  /** Catálogo da rodada: as 40 cartas do baralho. */
+  /**
+   * A carta virada da rodada; o coringa é o valor seguinte a ela. Fora do
+   * monte e das mãos. `null` antes de distribuir.
+   */
+  vira: CardId | null;
+  /** Catálogo da rodada: as 40 cartas do baralho, `value` já com o coringa. */
   cards: Record<CardId, Card>;
 }
 

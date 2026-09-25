@@ -1,6 +1,16 @@
 export * from './types.js';
 export { createRng, type Rng } from './rng.js';
-export { buildShoe, cardCatalog, deckCountFor, maxCardsPerRound, rankValue, shuffle } from './deck.js';
+export {
+  buildShoe,
+  cardCatalog,
+  cardValue,
+  coringaRank,
+  deckCountFor,
+  maxCardsPerRound,
+  rankValue,
+  shuffle,
+  withCoringa,
+} from './deck.js';
 export {
   forbiddenBetFor,
   legalBets,

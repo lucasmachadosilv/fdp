@@ -5,6 +5,7 @@
 
 import { describe, expect, it } from 'vitest';
 import {
+  coringaRank,
   isAutomaticPhase,
   advance,
   applyMove,
@@ -179,7 +180,9 @@ describe('CA-210/CA-211: distribuição', () => {
     state = settle(state).state;
 
     expect(state.deckCount).toBe(1);
-    expect(state.hidden.stock).toHaveLength(40 - 32);
+    // 32 nas mãos, 1 virada, 7 no monte.
+    expect(state.hidden.vira).not.toBeNull();
+    expect(state.hidden.stock).toHaveLength(40 - 32 - 1);
     for (const id of state.playerOrder) {
       expect(state.hidden.hands[id]).toHaveLength(4);
     }
@@ -229,6 +232,41 @@ describe('CA-281 a CA-286: projeção e vazamento', () => {
       expect(view.hand).toEqual([]);
       expect(checkNoLeak(state, viewer)).toEqual([]);
     }
+  });
+
+  it('testa: ninguém vê o coringa — nem a vira, nem a força dele', () => {
+    // Procura uma testa em que alguém recebeu coringa, para o teste valer.
+    for (let i = 0; i < 200; i++) {
+      const state = settle(
+        createMatch({ matchId: 'm', seed: `coringa-testa-${i}`, playerIds: players(6) }),
+      ).state;
+      const temCoringa = Object.values(state.hidden.hands).some(
+        (h) => state.hidden.cards[h[0]!]!.value > 10,
+      );
+      if (!temCoringa) continue;
+      for (const viewer of state.playerOrder) {
+        const view = project(state, viewer);
+        expect(JSON.stringify(view)).not.toContain(state.hidden.vira!);
+        for (const card of Object.values(view.foreheadCards)) {
+          expect(card.value).toBeLessThanOrEqual(10);
+        }
+        expect(checkNoLeak(state, viewer)).toEqual([]);
+      }
+      return;
+    }
+    throw new Error('nenhuma semente deu coringa na testa');
+  });
+
+  it('a vira sai do monte e define a força das cartas da rodada', () => {
+    const state = settle(
+      createMatch({ matchId: 'm', seed: 'vira', playerIds: players(4) }),
+    ).state;
+    const vira = state.hidden.cards[state.hidden.vira!]!;
+    expect(state.hidden.stock).not.toContain(vira.id);
+    const coringas = Object.values(state.hidden.cards).filter((c) => c.value > 10);
+    expect(coringas).toHaveLength(4);
+    expect(new Set(coringas.map((c) => c.rank)).size).toBe(1);
+    expect(coringas[0]!.rank).toBe(coringaRank(vira.rank));
   });
 
   it('CA-281: o CardId próprio não aparece no objeto serializado', () => {

@@ -17,8 +17,10 @@ import type { Card, PlayerId, PlayerView } from '@fdp/rules';
 export const VALORES = 10;
 /** O menor valor possível (`4`). */
 export const MENOR = 1;
-/** O maior valor possível (`3`). */
+/** O maior valor sem coringa (`3`). */
 export const MAIOR = 10;
+/** Coringas valem de 11 (ouros) a 14 (paus): um de cada. */
+export const MAIOR_CORINGA = 14;
 
 /**
  * Toda carta que este jogador já viu nesta rodada, com repetição.
@@ -53,15 +55,16 @@ export function cartasVistas(visao: PlayerView): number[] {
  * Um bot que tratasse empate como vitória apostaria alto demais.
  */
 export function chanceContraUma(valor: number, visao: PlayerView): number {
-  const porValor = 4 * visao.deckCount;
+  // Aproximação: não desconta os quatro comuns que viraram coringa.
+  const porValor = (v: number): number => (v > MAIOR ? 1 : 4);
   const vistas = cartasVistas(visao);
 
   let acimaOuIgual = 0;
   let restantes = 0;
 
-  for (let v = MENOR; v <= MAIOR; v++) {
+  for (let v = MENOR; v <= MAIOR_CORINGA; v++) {
     const jaVistas = vistas.filter((x) => x === v).length;
-    const sobrando = Math.max(0, porValor - jaVistas);
+    const sobrando = Math.max(0, porValor(v) - jaVistas);
     restantes += sobrando;
     if (v >= valor) acimaOuIgual += sobrando;
   }

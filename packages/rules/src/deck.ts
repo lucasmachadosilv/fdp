@@ -2,12 +2,41 @@
  * Construção e embaralhamento do sabot (`02` §3.2).
  */
 
-import { DECK_SIZE, RANKS, SUITS, type Card, type CardId, type Rank } from './types.js';
+import {
+  COR_SUIT_ORDER,
+  DECK_SIZE,
+  RANKS,
+  SUITS,
+  type Card,
+  type CardId,
+  type Rank,
+} from './types.js';
 import type { Rng } from './rng.js';
 
 /** Força sem coringa: 4=1, 5=2, … 3=10 (ordem de `RANKS`). */
 export function rankValue(rank: Rank): number {
   return RANKS.indexOf(rank) + 1;
+}
+
+/** O coringa é o valor seguinte ao da vira; depois do 3 volta ao 4. */
+export function coringaRank(viraRank: Rank): Rank {
+  return RANKS[(RANKS.indexOf(viraRank) + 1) % RANKS.length]!;
+}
+
+/**
+ * Força da carta com a vira já conhecida. Coringa fica acima de tudo (11..14)
+ * e o naipe desempata entre coringas: paus > copas > espadas > ouros.
+ */
+export function cardValue(rank: Rank, suit: Card['suit'], viraRank: Rank | null): number {
+  if (viraRank !== null && rank === coringaRank(viraRank)) {
+    return RANKS.length + 1 + COR_SUIT_ORDER.indexOf(suit);
+  }
+  return rankValue(rank);
+}
+
+/** Recalcula `value` de todas as cartas para a vira da rodada. Não muta. */
+export function withCoringa(cards: readonly Card[], viraRank: Rank): Card[] {
+  return cards.map((c) => ({ ...c, value: cardValue(c.rank, c.suit, viraRank) }));
 }
 
 /**

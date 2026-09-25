@@ -7,6 +7,7 @@
  * de esconder e esquecer de mostrar.
  */
 
+import { rankValue } from './deck.js';
 import { isActive } from './engine.js';
 import type {
   Card,
@@ -109,7 +110,11 @@ export function project(state: MatchState, viewerId: PlayerId): PlayerView {
     for (const [playerId, cardIds] of Object.entries(hidden.hands)) {
       if (playerId === viewerId && aindaSecreta) continue; // RJ-100
       const cardId = cardIds[0];
-      if (cardId) foreheadCards[playerId] = hidden.cards[cardId]!;
+      if (!cardId) continue;
+      const card = hidden.cards[cardId]!;
+      // Ninguém vê o coringa na testa. A força com coringa entregaria qual é
+      // ele, então até a revelação a carta vai com a força da ordem simples.
+      foreheadCards[playerId] = aindaSecreta ? { ...card, value: rankValue(card.rank) } : card;
     }
   } else if (!round.isForeheadRound && !isSpectator) {
     hand = (hidden.hands[viewerId] ?? []).map((id) => hidden.cards[id]!);

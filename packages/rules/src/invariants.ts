@@ -17,12 +17,13 @@ export function checkInvariants(state: MatchState): string[] {
   const dealt = Object.keys(hidden.cards).length > 0;
 
   if (dealt) {
-    // INV-03: mãos + monte + cartas jogadas = 40 × deckCount.
+    // INV-03: mãos + monte + vira + cartas jogadas = 40 × deckCount.
     const inHands = Object.values(hidden.hands).reduce((n, h) => n + h.length, 0);
     const played =
       round.resolvedTricks.reduce((n, t) => n + t.plays.length, 0) +
       (round.currentTrick?.plays.length ?? 0);
-    const total = inHands + hidden.stock.length + played;
+    const vira = hidden.vira == null ? 0 : 1;
+    const total = inHands + hidden.stock.length + played + vira;
     const expected = DECK_SIZE * state.deckCount;
     if (total !== expected) {
       violations.push(`INV-03: ${total} cartas contabilizadas, esperado ${expected}`);
@@ -37,6 +38,7 @@ export function checkInvariants(state: MatchState): string[] {
     };
     for (const h of Object.values(hidden.hands)) h.forEach(visit);
     hidden.stock.forEach(visit);
+    if (hidden.vira != null) visit(hidden.vira);
     for (const t of round.resolvedTricks) t.plays.forEach((p) => visit(p.cardId));
     round.currentTrick?.plays.forEach((p) => visit(p.cardId));
     if (dup.length > 0) violations.push(`INV-04: cartas duplicadas ${dup.join(', ')}`);
@@ -138,6 +140,17 @@ export function checkNoLeak(state: MatchState, viewerId: PlayerId): string[] {
   const foreheadRevealed =
     state.round.isForeheadRound &&
     (state.round.phase === 'REVELACAO' || state.round.phase === 'RESOLUCAO');
+
+  // Na testa ninguém vê o coringa: nem a vira, nem uma força que o denuncie.
+  if (state.round.isForeheadRound && !foreheadRevealed && state.hidden.vira != null) {
+    if (serialized.includes(state.hidden.vira)) {
+      violations.push(`vira ${state.hidden.vira} vazou para ${viewerId} na testa`);
+    }
+    const view = project(state, viewerId);
+    for (const card of Object.values(view.foreheadCards)) {
+      if (card.value > 10) violations.push(`força do coringa vazou para ${viewerId} na testa`);
+    }
+  }
 
   for (const [playerId, cardIds] of Object.entries(state.hidden.hands)) {
     const isOwn = playerId === viewerId;

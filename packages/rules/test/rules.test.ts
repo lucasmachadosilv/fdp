@@ -16,6 +16,8 @@ import {
   nextFirstBidder,
   nextLeaderOf,
   orderFrom,
+  cardValue,
+  coringaRank,
   maxCardsPerRound,
   rankValue,
   resolveTrick,
@@ -95,6 +97,47 @@ describe('CA-201/CA-202: sabot e número de baralhos', () => {
   it('força: 4 < 5 < 6 < 7 < 10 < J < Q < A < 2 < 3', () => {
     const ordem = ['4', '5', '6', '7', '10', 'J', 'Q', 'A', '2', '3'] as const;
     expect(ordem.map(rankValue)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
+  });
+});
+
+describe('coringa', () => {
+  it('é o valor seguinte à vira, e depois do 3 volta ao 4', () => {
+    expect(coringaRank('4')).toBe('5');
+    expect(coringaRank('7')).toBe('10');
+    expect(coringaRank('Q')).toBe('A');
+    expect(coringaRank('2')).toBe('3');
+    expect(coringaRank('3')).toBe('4');
+  });
+
+  it('coringa ganha de todas; entre coringas, paus > copas > espadas > ouros', () => {
+    // Vira 3 → coringa 4, a carta mais fraca da ordem simples.
+    const quatros = (['ouros', 'espadas', 'copas', 'paus'] as const).map((s) =>
+      cardValue('4', s, '3'),
+    );
+    expect(quatros).toEqual([11, 12, 13, 14]);
+    expect(Math.min(...quatros)).toBeGreaterThan(cardValue('3', 'paus', '3'));
+    // O resto segue a ordem simples, e o naipe não conta.
+    expect(cardValue('A', 'paus', '3')).toBe(cardValue('A', 'ouros', '3'));
+  });
+
+  it('coringas nunca empatam; cartas iguais que não são coringa empardam', () => {
+    const c = (id: string, rank: Card['rank'], suit: Card['suit']): Card => ({
+      id, rank, suit, value: cardValue(rank, suit, 'Q'), deckIndex: 0,
+    });
+    // Vira Q → coringa A.
+    const cards: Record<CardId, Card> = {
+      a1: c('a1', 'A', 'ouros'),
+      a2: c('a2', 'A', 'paus'),
+      t1: c('t1', '3', 'copas'),
+      t2: c('t2', '3', 'espadas'),
+    };
+    const jogar = (...ids: string[]): TrickPlay[] =>
+      ids.map((cardId, i) => ({ playerId: `p${i}`, cardId }));
+
+    expect(resolveTrick(jogar('a1', 'a2', 't1'), cards, ANULA_CARTAS).winnerId).toBe('p1');
+    expect(resolveTrick(jogar('t1', 'a1'), cards, ANULA_CARTAS).winnerId).toBe('p1');
+    // Dois 3 empardam.
+    expect(resolveTrick(jogar('t1', 't2'), cards, ANULA_CARTAS).winnerId).toBeNull();
   });
 });
 

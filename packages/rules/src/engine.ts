@@ -5,7 +5,7 @@
  * `Math.random()` (RJ-140): tempo e aleatoriedade entram por parâmetro.
  */
 
-import { buildShoe, cardCatalog, deckCountFor, maxCardsPerRound } from './deck.js';
+import { buildShoe, cardCatalog, deckCountFor, maxCardsPerRound, withCoringa } from './deck.js';
 import { createRng } from './rng.js';
 import {
   forbiddenBetFor,
@@ -115,7 +115,7 @@ export function createMatch(params: CreateMatchParams): MatchState {
     deckCount: deckCountFor(playerOrder.length, 1),
     firstBidderId,
     round: emptyRound(),
-    hidden: { stock: [], hands: {}, cards: {} },
+    hidden: { stock: [], hands: {}, vira: null, cards: {} },
     history: [],
     winnerIds: null,
     endReason: null,
@@ -204,8 +204,8 @@ function deal(state: MatchState): MoveResult {
   const rng = roundRng(state);
   const shoe = buildShoe(deckCount, rng);
 
-  // RJ-043: por construção de RJ-024 o sabot sempre basta.
-  const needed = players.length * cardsThisRound;
+  // O teto de cartas por rodada garante que as mãos e a vira cabem.
+  const needed = players.length * cardsThisRound + 1;
   if (shoe.length < needed) {
     throw new Error(
       `sabot insuficiente: ${shoe.length} cartas para ${needed} necessárias`,
@@ -235,13 +235,18 @@ function deal(state: MatchState): MoveResult {
 
   const isForeheadRound = cardsThisRound === 1;
 
+  // Vira-se a carta seguinte às mãos; o coringa é o valor acima dela.
+  const vira = shoe[cursor]!;
+  const cards = cardCatalog(withCoringa(shoe, vira.rank));
+
   const next: MatchState = {
     ...state,
     deckCount,
     hidden: {
-      stock: shoe.slice(cursor).map((c) => c.id),
+      stock: shoe.slice(cursor + 1).map((c) => c.id),
       hands,
-      cards: cardCatalog(shoe),
+      vira: vira.id,
+      cards,
     },
     round: {
       phase: 'APOSTAS',
@@ -824,7 +829,7 @@ function startNextRound(state: MatchState): MatchState {
       survivors.includes(id),
     ),
     round: emptyRound(),
-    hidden: { stock: [], hands: {}, cards: {} },
+    hidden: { stock: [], hands: {}, vira: null, cards: {} },
   };
 }
 
@@ -922,7 +927,7 @@ export function withdrawPlayers(
     cardsThisRound,
     deckCount: deckCountFor(survivors.length, cardsThisRound),
     round: emptyRound(),
-    hidden: { stock: [], hands: {}, cards: {} },
+    hidden: { stock: [], hands: {}, vira: null, cards: {} },
   };
 
   return { ok: true, state: restarted, events };
